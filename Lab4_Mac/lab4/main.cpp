@@ -28,6 +28,8 @@ struct Point{
 int nPt = 0;
 Point ptList[MAXPTNO];
 Point ptFirstPointsList[MAXPTNO];
+int size = 20;
+
 
 // Display options
 bool displayControlPoints = true;
@@ -35,6 +37,7 @@ bool displayControlLines = true;
 bool displayTangentVectors = false;
 bool displayObjects = false;
 bool C1Continuity = false;
+bool changeColorContinuously = false;
 
 Point newSecondPoint(Point p4, Point p3){
     Point result = {0, 0};
@@ -64,15 +67,83 @@ void drawRightArrow(){
     glEnd();
 }
 
-void drawTangentArrow(vector<Point> ctrlPoints, float i, int n) {
+void drawObject(){
+    glPushMatrix();
+    int i;
+    double theta, nextTheta;
+    double x1, y1;
+    
+    glBegin(GL_LINE_STRIP);
+    for (i=0; i<180; i++) {
+        theta = (3.1415926536/180) * i;
+        nextTheta = (3.1415926536/180) * (i+1);
+        x1 = sin(theta);
+        y1 = cos(theta);
+        glVertex2d(40*(i/360.0)*x1, 40*(i/360.0)*y1);
+    }
+    glEnd();
+    glPopMatrix();
+}
+
+void drawPetal(){
+    clock_t tick = clock();
+    int value = fmod((tick * 0.0003), 768);    //glutGet(GLUT_ELAPSED_TIME)
+    GLfloat r = 0, g = 0 , b = 0;
+    if (value < 256){
+        r = value;
+        g = 255 - value;
+        b = 255;
+    } else if (value < 512) {
+        value = value - 256;
+        r = 255;
+        g = value;
+        b = 255 - value;
+    } else if (value < 768) {
+        value = value - 512;
+        r = 255 - value;
+        g = 255;
+        b = value;
+    }
+    r = r / 255.0;
+    g = g / 255.0;
+    b = b / 255.0;
+    glColor3f(r, g, b);
+    glPushMatrix();
+    glPushMatrix();
+    drawObject();
+    glScaled(-1, 1, 1);
+    drawObject();
+    glPopMatrix();
+    glRotatef(90, 0, 0, 1);
+    glPushMatrix();
+    drawObject();
+    glScaled(-1, 1, 1);
+    drawObject();
+    glPopMatrix();
+    glRotatef(90, 0, 0, 1);
+    glPushMatrix();
+    drawObject();
+    glScaled(-1, 1, 1);
+    drawObject();
+    glPopMatrix();
+    glRotatef(90, 0, 0, 1);
+    glPushMatrix();
+    drawObject();
+    glScaled(-1, 1, 1);
+    drawObject();
+    glPopMatrix();
+    glPopMatrix();
+}
+
+void drawTangentArrow(vector<Point> ctrlPoints, float i, int n){
     float dx = 0, dy = 0, rotateAngle = 0;
     Point targetPoint = {0, 0};
-    for(int j = 0; j < n - 1 ; j++) {
+    for(int j = 0; j < n - 1 ; j++){
         float coeff = bezierCoe(j, i, n - 2);
         dx += coeff * (n - 1) * (ctrlPoints.at(j + 1).x - ctrlPoints.at(j).x);
         dy += coeff * (n - 1) * (ctrlPoints.at(j + 1).y - ctrlPoints.at(j).y);
     }
-    for(int j = 0; j < n ; j++) {
+    for(int j = 0; j < n ; j++){
         float coe = bezierCoe(j, i, n - 1);
         Point vertex = ctrlPoints.at(j);
         targetPoint.x += coe * vertex.x;
@@ -82,7 +153,14 @@ void drawTangentArrow(vector<Point> ctrlPoints, float i, int n) {
     glPushMatrix();
     glTranslatef(targetPoint.x, targetPoint.y, 0);
     glRotatef(rotateAngle*180/M_PI, 0, 0, 1);
-    drawRightArrow();
+    if(displayTangentVectors == true){
+       drawRightArrow();
+    }
+    if(displayObjects == true){
+        glPushMatrix();
+        drawPetal();
+        glPopMatrix();
+    }
     glPopMatrix();
 }
 
@@ -102,8 +180,8 @@ void drawPointsInCurve(vector<Point> contralPoints){
     }
     glEnd();
     
-    if(displayTangentVectors){
-        for (float i = 0.0; i <= 1.0; i += (1/(float)NOBJECTONCURVE)){
+    if(displayTangentVectors || displayObjects){
+        for (float i = 0.0; i < 1.0; i += (1/(float)NOBJECTONCURVE)){
             drawTangentArrow(contralPoints, i, (int)n);
         }
     }
@@ -131,7 +209,7 @@ void display(void){
 	if(displayControlPoints){
 		glPointSize(5);
 		glBegin(GL_POINTS);
-		for(int i=0; i<nPt; i++){
+		for(int i = 0; i < nPt; i++){
             bezierCurve.push_back(ptList[i]);
             glColor3f(0,0,0);
             if (C1Continuity && ((i+1) > 4) && bezierCurve.size() == 2){
@@ -161,8 +239,8 @@ void display(void){
             glVertex2d(ptList[i].x,ptList[i].y);
         }
         glEnd();
-        drawBezierCurve();
-	}
+    }
+    drawBezierCurve();
 	glPopMatrix();
 	glutSwapBuffers ();
 }
@@ -193,7 +271,9 @@ void readFile(){
     
 	for(int i=0;i<nPt;i++){
 		file >> ptList[i].x;
+        ptFirstPointsList[i].x = ptList[i].x;
 		file >> ptList[i].y;
+        ptFirstPointsList[i].y = ptList[i].y;
 	}
     file.close();// is not necessary because the destructor closes the open file by default
 }
@@ -212,6 +292,15 @@ void writeFile(){
 
 void keyboard (unsigned char key, int x, int y){
 	switch (key) {
+        case 'd':
+        case 'D':
+            if(nPt >= 3){
+              nPt = nPt - 3;
+            }else if(0 < nPt && nPt < 3){
+                nPt = nPt - 1;
+            }
+            break;
+            
 		case 'r':
 		case 'R':
 			readFile();
@@ -282,13 +371,18 @@ void mouse(int button, int state, int x, int y){
 			cout << "Error: Exceeded the maximum number of points." << endl;
 			return;
 		}
-		ptList[nPt].x=x;
-		ptList[nPt].y=y;
+		ptList[nPt].x = x;
+		ptList[nPt].y = y;
         ptFirstPointsList[nPt].x = x;
         ptFirstPointsList[nPt].y = y;
 		nPt++;
 	}
 	glutPostRedisplay();
+}
+
+void idle(){
+    // update animation
+    glutPostRedisplay();
 }
 
 int main(int argc, char **argv){
@@ -307,12 +401,14 @@ int main(int argc, char **argv){
 	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize (600, 600);
 	glutInitWindowPosition (50, 50);
-	glutCreateWindow ("CS3241 Assignment 4");
+	glutCreateWindow ("CS3241 Chen Yinfang Assignment 4");
 	init ();
-	glutDisplayFunc(display);
+    glutDisplayFunc(display);
+    glutIdleFunc(idle);
 	glutReshapeFunc(reshape);
 	glutMouseFunc(mouse);
 	glutKeyboardFunc(keyboard);
+    
 	glutMainLoop();
     
 	return 0;
