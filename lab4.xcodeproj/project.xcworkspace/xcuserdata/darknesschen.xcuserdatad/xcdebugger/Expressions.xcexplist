@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "drawBezierPoints(std::vector&lt;Point, std::allocator&lt;Point&gt; &gt;):main.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "j">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "mach_msg_trap:(null)">
+         <PersistentStrings>
+            <PersistentString
+               value = "ptFirstPointsList">
+            </PersistentString>
+            <PersistentString
+               value = "ptList">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>
